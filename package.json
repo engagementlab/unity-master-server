@@ -1,0 +1,16 @@
+{
+  "name": "master-server",
+  "version": "1.0.0",
+  "description": "a master server to connect devices for local multiplayer games",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jay vachon",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4",
+    "http": "0.0.0",
+    "underscore": "^1.8.3"
+  }
+}
