@@ -22,6 +22,7 @@ require('./models')(app, mongoose);
 
 // settings
 app.set('port', config.port);
+app.set('json spaces', 2);
 
 require('./routes')(app);
 
