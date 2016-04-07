@@ -1,6 +1,6 @@
 'use strict';
 
-var timeout = 2;
+var timeout = 3; // time in seconds a client can be unresponsive before being marked as unconnected
 
 exports = module.exports = function (app, mongoose) {
 	

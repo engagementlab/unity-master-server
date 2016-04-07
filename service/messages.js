@@ -31,7 +31,7 @@ var getClientInRoom = function (req, cb) {
 	});
 };
 
-var receiveFirstMessage = function (res, room, client) {
+var receiveFirstMessage = function (room, client, cb) {
 
 	var message = room.messages[0];
 	var msg = {
@@ -43,19 +43,27 @@ var receiveFirstMessage = function (res, room, client) {
 
 	// Don't retrieve the message if this client has already received it
 	if (_.find(message.confirmations, function(x) { return x == client._id.toString(); })) {
-		res.status(200).json({});
+		cb({});
 	} else {
 		message.confirmReceipt(client._id, room.clientCount(), function(err, n) {
 			if (err) {
-				res.status(200).json({ result: err });
+				return cb({ result: err });
 			}
-			res.status(200).json(msg);
+			cb(msg);
 		});
 	}
 };
 
+var getConnectedClients = function (room) {
+	var clients = _.filter(room.clients, function(x) { return x.connected(); });
+	if (room.host.connected())
+		clients.push(room.host);
+	return clients;
+};
+
 var messages = {
 
+	// Send a message for other clients to receive
 	send: function(req, res) {
 		
 		getClientInRoom(req, function (room, client) {
@@ -63,6 +71,7 @@ var messages = {
 			if (room === undefined || client === undefined)
 				return res.status(200).json({ error: 'no_room' });
 
+			// Create the messages
 			req.app.db.models.Message.create({
 				key: req.params.key,
 				str1: req.params.str1,
@@ -76,6 +85,7 @@ var messages = {
 		});
 	},
 
+	// Receive messages sent to the server
 	receive: function(req, res) {
 
 		getClientInRoom(req, function (room, client) {
@@ -83,10 +93,17 @@ var messages = {
 			if (room === undefined || client === undefined)
 				return res.status(200).json({ error: 'no_room' });
 
-			if (room.messages.length === 0)
-				return res.status(200).json({});
+			if (room.messages.length === 0) {
+				return res.status(200).json(getConnectedClients(room));
+			}
 
-			receiveFirstMessage(res, room, client);
+			receiveFirstMessage(room, client, function(msg) {
+				var response = {};
+				response.message = msg;
+				response.clients = getConnectedClients(room);
+				res.status(200).json(response);
+			});
+
 		});
 	}
 };

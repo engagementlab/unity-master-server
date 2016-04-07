@@ -18,21 +18,12 @@ exports = module.exports = function (app, mongoose) {
 		var that = this;
 		this.update({ '$addToSet': { 'confirmations': clientId } }, function(err, n) {
 			if (that.confirmations.length+1 >= clientCount) {
-				// console.log(that);
-				that.remove(function() {
-					cb();
-				})
+				that.remove(function() { cb(); });
 			} else {
 				cb();
 			}
 		});
 	};
-
-	/*messageSchema.post('update', function() {
-		console.log(this.confirmations);
-		if (this.confirmations.length+1 >= clientCount)
-			this.remove();
-	});*/
 
 	app.db.model('Message', messageSchema);
 };
