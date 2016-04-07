@@ -3,14 +3,17 @@
   "version": "1.0.0",
   "description": "a master server to connect devices for local multiplayer games",
   "main": "index.js",
+  "repository": "https://github.com/engagementgamelab/master-server",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "jay vachon",
   "license": "ISC",
   "dependencies": {
+    "async": "^1.5.2",
     "express": "^4.13.4",
     "http": "0.0.0",
+    "mongoose": "^4.4.11",
     "underscore": "^1.8.3"
   }
 }
