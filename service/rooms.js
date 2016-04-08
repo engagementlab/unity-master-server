@@ -34,7 +34,7 @@ var lazyGetClient = function (req, cb) {
 };
 
 var getRoomClients = function (req, cb) {
-	req.app.db.models.Room.findById(req.params.roomId).populate('clients').exec(function(err, room) {
+	req.app.db.models.Room.findById(req.params.roomId).populate('clients host').exec(function(err, room) {
 
 		if (room == undefined) 
 			return cb(undefined, undefined);
@@ -77,7 +77,6 @@ var rooms = {
 			if (outcome.room === null) {
 				req.app.db.models.Room.create({
 					host: outcome.client,
-					minClientCount: req.params.minClientCount,
 					maxClientCount: req.params.maxClientCount
 				}, function(err, room) {
 					if (err) {
@@ -122,9 +121,10 @@ var rooms = {
 			if (err) {
 				return handleError(res, err);
 			}
-			res.status(200).json(_.map(_.filter(rooms, 
-				function (x) { return x.open && x.acceptingClients(); }), 
-			function(x) { return { roomId: x._id, host: x.host }; }));
+			var outcome = {};
+			var availableRooms = _.filter(rooms, function (x) { return x.open && x.acceptingClients(); })
+			outcome.rooms = _.map(availableRooms, function(x) { return { roomId: x._id, host: x.host.name }; });
+			res.status(200).json(outcome);
 		});
 	},
 
@@ -148,6 +148,7 @@ var rooms = {
 					return cb(null, 'done');
 				}
 
+				clients.push(room.host);
 				if (_.find(clients, function(x) { return x.name == req.params.name; }) !== undefined) {
 					outcome.error = 'name_taken';
 					cb(null, 'done');
@@ -221,14 +222,14 @@ var rooms = {
 	},	
 
 	reset: function (req, res) {
-		// todo: async parallel
+		// todo: async 
 		req.app.db.models.Room.remove({}, function(err) {
 			if (err) return err;
 			req.app.db.models.Client.remove({}, function(err) {
 				if (err) return err;
 				req.app.db.models.Message.remove({}, function(err) {
 					if (err) return err;
-					res.status(200).json({ result: "reset" });
+					res.status(200).json({ result: "success" });
 				});
 			});
 		});

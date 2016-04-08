@@ -12,7 +12,6 @@ exports = module.exports = function (app, mongoose) {
 			ref: 'Client',
 			default: []
 		}],
-		minClientCount: { type: Number, default: -1 },
 		maxClientCount: { type: Number, default: -1 },
 		messages: [{
 			type: mongoose.Schema.Types.ObjectId,

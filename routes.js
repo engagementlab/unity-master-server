@@ -5,8 +5,10 @@ var messages = require('./service/messages');
 
 exports = module.exports = function (app) {
 
+	app.get('/ping', function(req, res) { res.status(200).json({ result: "sucess" })});
+
 	// -- Rooms
-	app.get('/registerHost/:name/:address/:minClientCount/:maxClientCount', rooms.registerHost);
+	app.get('/registerHost/:name/:address/:maxClientCount', rooms.registerHost);
 	app.get('/unregisterHost/:roomId', rooms.unregisterHost);
 	app.get('/registerClient/:roomId/:name/:address', rooms.registerClient);
 	app.get('/unregisterClient/:roomId/:clientId', rooms.unregisterClient);
