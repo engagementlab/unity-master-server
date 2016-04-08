@@ -52,29 +52,31 @@ var rooms = {
 	registerHost: function (req, res) {
 
 		var outcome = {};
+		var client = {};
 
 		// Get the client associated with the name and address
 		var getClient = function (cb) {
-			lazyGetClient(req, function(client) {
-				outcome.client = client;
+			lazyGetClient(req, function(c) {
+				client = c;
 				cb(null, 'done');
 			});
 		};
 
 		// Get the Room model associated with the host
+		// If one exists, mark it as taken (can't have two hosts with the same name)
 		var getRoom = function (data, cb) {
-			req.app.db.models.Room.findOne({ 'host': outcome.client }).exec(function(err, room) {
+			req.app.db.models.Room.findOne({ 'host': client }).exec(function(err, room) {
 				if (err) {
 					return cb(err, null);
 				}
-				outcome.room = room;
+				outcome = { error: "name_taken" };
 				cb(null, 'done');
 			});
 		};
 
 		// If no Room was found, create a new one
 		var createRoom = function (data, cb) {
-			if (outcome.room === null) {
+			if (outcome === null) {
 				req.app.db.models.Room.create({
 					host: outcome.client,
 					maxClientCount: req.params.maxClientCount
@@ -82,7 +84,7 @@ var rooms = {
 					if (err) {
 						return cb(err, null);
 					}
-					outcome.room = room;
+					outcome = room;
 					cb(null, 'done');
 				});
 			} else {
@@ -95,7 +97,8 @@ var rooms = {
 				console.log(err);
 				return next(err);
 			}
-			res.status(200).json(outcome.room);
+			console.log(outcome);
+			res.status(200).json(outcome);
 		};
 
 		async.waterfall([getClient, getRoom, createRoom], asyncFinally);
