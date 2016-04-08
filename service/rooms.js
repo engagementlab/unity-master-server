@@ -123,7 +123,7 @@ var rooms = {
 				return handleError(res, err);
 			}
 			res.status(200).json(_.map(_.filter(rooms, 
-				function (x) { return x.acceptingClients(); }), 
+				function (x) { return x.open && x.acceptingClients(); }), 
 			function(x) { return { roomId: x._id, host: x.host }; }));
 		});
 	},
@@ -199,12 +199,37 @@ var rooms = {
 		});
 	},
 
+	// Closes the room so that no other clients can join
+	close: function (req, res) {
+		req.app.db.models.Room.findById(req.params.roomId, function(err, room) {
+			if (err)
+				return handleError(err);
+			room.update({ '$set': { 'open': false } }, function(err, n) {
+				res.status(200).json({ result: 'success' });
+			});
+		});
+	},
+
+	// Closes rooms whose host has disconnected without unregistering
+	closeDisconnectedRooms: function (req, res) {
+		// todo
+		/*req.app.db.models.Room.remove({ 'open': false, 'host.name': 'greta' }).populate('host').exec(function(err, result) {
+			if (err)
+				return handleError(err);
+			res.status(200).json(result);
+		});*/
+	},	
+
 	reset: function (req, res) {
+		// todo: async parallel
 		req.app.db.models.Room.remove({}, function(err) {
 			if (err) return err;
 			req.app.db.models.Client.remove({}, function(err) {
 				if (err) return err;
-				res.status(200).json({ result: "reset" });
+				req.app.db.models.Message.remove({}, function(err) {
+					if (err) return err;
+					res.status(200).json({ result: "reset" });
+				});
 			});
 		});
 	},

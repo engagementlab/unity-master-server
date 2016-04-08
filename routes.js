@@ -11,6 +11,8 @@ exports = module.exports = function (app) {
 	app.get('/registerClient/:roomId/:name/:address', rooms.registerClient);
 	app.get('/unregisterClient/:roomId/:clientId', rooms.unregisterClient);
 	app.get('/roomList', rooms.requestRoomList);
+	app.get('/closeRoom/:roomId', rooms.close);
+	app.get('/closeDisconnectedRooms', rooms.closeDisconnectedRooms);
 
 	// -- Messaging
 	app.get('/sendMessage/:roomId/:clientId/:key/:str1/:str2/:val', messages.send);

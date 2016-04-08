@@ -19,7 +19,8 @@ exports = module.exports = function (app, mongoose) {
 			ref: 'Message',
 			default: []
 		}],
-		timeCreated: { type: Date, default: Date.now }
+		open: { type: Boolean, default: true },
+		timeCreated: { type: Date, default: Date.now },
 	});
 
 	roomSchema.methods.acceptingClients = function () {
