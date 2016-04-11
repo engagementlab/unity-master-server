@@ -25,6 +25,7 @@ app.set('port', config.port);
 app.set('json spaces', 2);
 
 require('./routes')(app);
+// require('./hosts')(app);
 
 app.server.listen(app.config.port, function() {
 	console.log("App listening on port " + app.config.port);

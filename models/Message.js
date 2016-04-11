@@ -1,5 +1,7 @@
 'use strict';
 
+var _ = require('underscore');
+
 exports = module.exports = function (app, mongoose) {
 
 	var messageSchema = new mongoose.Schema({
@@ -23,6 +25,14 @@ exports = module.exports = function (app, mongoose) {
 				cb();
 			}
 		});
+	};
+
+	messageSchema.methods.waitingForConfirmations = function (clients) {
+		for (var i = 0; i < clients.length; i++) {
+			if (!_.contains (this.confirmations, clients[i]))
+				return true;
+		}
+		return false;
 	};
 
 	app.db.model('Message', messageSchema);

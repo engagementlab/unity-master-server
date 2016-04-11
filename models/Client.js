@@ -7,7 +7,8 @@ exports = module.exports = function (app, mongoose) {
 	var clientSchema = new mongoose.Schema({
 		name: String,
 		address: String,
-		lastUpdated: { type: Date, default: Date.now }
+		lastUpdated: { type: Date, default: Date.now },
+		events: [String]
 	});
 
 	clientSchema.methods.connected = function () {

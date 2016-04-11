@@ -4,7 +4,7 @@ var async = require('async');
 var _ = require('underscore');
 
 var handleError = function (res, err) {
-	console.log(err);
+	console.log("error: " + err);
 	res.status(200).json({ result: 'error', details: err });
 };
 
@@ -34,7 +34,7 @@ var lazyGetClient = function (req, cb) {
 };
 
 var getRoomClients = function (req, cb) {
-	req.app.db.models.Room.findById(req.params.roomId).populate('clients host').exec(function(err, room) {
+	req.app.db.models.Room.findById(req.params.roomId).populate('clients').exec(function(err, room) {
 
 		if (room == undefined) 
 			return cb(undefined, undefined);
@@ -43,6 +43,22 @@ var getRoomClients = function (req, cb) {
 			return handleError(res, err);
 
 		cb(room, room.clients);
+	});
+};
+
+var getRoomClientsAndHost = function (req, cb) {
+
+	req.app.db.models.Room.findById(req.params.roomId).populate('clients host').exec(function(err, room) {
+
+		if (room == undefined) 
+			return cb(undefined, undefined);
+
+		if (err)
+			return handleError(res, err);
+
+		var clients = room.clients;
+		clients.push(room.host);
+		cb(room, clients);
 	});
 };
 
@@ -65,20 +81,24 @@ var rooms = {
 		// Get the Room model associated with the host
 		// If one exists, mark it as taken (can't have two hosts with the same name)
 		var getRoom = function (data, cb) {
+			// TODO: only query available rooms
 			req.app.db.models.Room.findOne({ 'host': client }).exec(function(err, room) {
-				if (err) {
+
+				if (err) 
 					return cb(err, null);
-				}
-				outcome = { error: "name_taken" };
+
+				if (room != null)
+					outcome = { error: "name_taken" };
+
 				cb(null, 'done');
 			});
 		};
 
 		// If no Room was found, create a new one
 		var createRoom = function (data, cb) {
-			if (outcome === null) {
+			if (_.isEmpty(outcome)) {
 				req.app.db.models.Room.create({
-					host: outcome.client,
+					host: client,
 					maxClientCount: req.params.maxClientCount
 				}, function(err, room) {
 					if (err) {
@@ -97,7 +117,6 @@ var rooms = {
 				console.log(err);
 				return next(err);
 			}
-			console.log(outcome);
 			res.status(200).json(outcome);
 		};
 
@@ -144,14 +163,13 @@ var rooms = {
 		};
 
 		var checkClientNameUnique = function (data, cb) {
-			getRoomClients(req, function(room, clients) {
+			getRoomClientsAndHost(req, function(room, clients) {
 
 				if (room == undefined || clients == undefined) {
 					outcome.error = 'no_room';
 					return cb(null, 'done');
 				}
 
-				clients.push(room.host);
 				if (_.find(clients, function(x) { return x.name == req.params.name; }) !== undefined) {
 					outcome.error = 'name_taken';
 					cb(null, 'done');
@@ -167,8 +185,16 @@ var rooms = {
 					if (err) {
 						return handleError(res, err);
 					}
+
 					outcome.room = room;
-					cb(null, 'done');
+
+					// Populate new client
+					req.app.db.models.Room.findById(req.params.roomId).populate('clients host messages').exec(function(err, room) {
+						if (err)
+							return handleError(res, err);
+						outcome.room = room;
+						cb(null, 'done');
+					});
 				});
 			} else {
 				cb(null, 'done');
@@ -180,7 +206,7 @@ var rooms = {
 				console.log(err);
 				return next(err);
 			}
-			res.status(200).json(outcome);
+			res.status(200).json(outcome.room);
 		};
 
 		async.waterfall([getClient, checkClientNameUnique, addClientToRoom], asyncFinally);
@@ -200,6 +226,14 @@ var rooms = {
 					return handleError(res, err);
 				res.status(200).json({ result: 'success' });
 			});
+		});
+	},
+
+	getRoom: function (req, res) {
+		req.app.db.models.Room.findById(req.params.roomId).populate('clients host messages').exec(function(err, room) {
+			if (err)
+				return handleError(err);
+			res.status(200).json(room);
 		});
 	},
 

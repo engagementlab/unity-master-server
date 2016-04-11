@@ -27,13 +27,15 @@ var getClientInRoom = function (req, cb) {
 
 		client.update({ 'lastUpdated': Date.now() }, function (err, n) {
 			cb(room, client);
+
 		});
 	});
 };
 
 var receiveFirstMessage = function (room, client, cb) {
 
-	var message = room.messages[0];
+	// var message = room.messages[0];
+	var message = room.nextMessage();
 	var msg = {
 		key: message.key,
 		str1: message.str1,
@@ -64,6 +66,26 @@ var getConnectedClients = function (room) {
 var messages = {
 
 	// Send a message for other clients to receive
+	/*send: function(req, res) {
+		console.log(req.body);
+		getClientInRoom(req, function (room, client) {
+
+			if (room === undefined || client === undefined)
+				return res.status(200).json({ error: 'no_room' });
+
+			// Create the messages
+			req.app.db.models.Message.create({
+				key: req.body.key,
+				str1: req.body.str1,
+				str2: req.body.str2,
+				val: req.body.val
+			}, function(err, message) {
+				room.update({ '$addToSet': { 'messages': message._id } }, function(err, n) {
+					res.status(200).json({ result: 'success' });
+				});
+			});
+		});
+	},*/
 	send: function(req, res) {
 		
 		getClientInRoom(req, function (room, client) {
@@ -79,7 +101,7 @@ var messages = {
 				val: req.params.val
 			}, function(err, message) {
 				room.update({ '$addToSet': { 'messages': message._id } }, function(err, n) {
-					res.status(200).json({});
+					res.status(200).json({ result: 'success' });
 				});
 			});
 		});
@@ -93,15 +115,19 @@ var messages = {
 			if (room === undefined || client === undefined)
 				return res.status(200).json({ error: 'no_room' });
 
-			if (room.messages.length === 0) {
+			/*if (room.messages.length === 0) {
 				return res.status(200).json(getConnectedClients(room));
+			}*/
+
+			if (room.messages.length == 0) {
+				return res.status(200).json({ result: "no_messages" });
 			}
 
 			receiveFirstMessage(room, client, function(msg) {
 				var response = {};
 				response.message = msg;
-				response.clients = getConnectedClients(room);
-				res.status(200).json(response);
+				// response.clients = getConnectedClients(room);
+				res.status(200).json(response.message);
 			});
 
 		});
