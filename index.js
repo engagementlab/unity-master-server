@@ -4,6 +4,9 @@ var config = require('./config');
 var express = require('express');
 var http = require('http');
 var mongoose = require('mongoose');
+var io = require('socket.io')(http, {
+	transports: ['websocket'],
+});
 
 // setup server
 var app = module.exports = express();
@@ -25,8 +28,16 @@ app.set('port', config.port);
 app.set('json spaces', 2);
 
 require('./routes')(app);
-// require('./hosts')(app);
+// require('./hosts')(app); // old version - deprecate
+
+io.attach(3002);
+io.on('connection', function(socket){
+	socket.on('beep', function(){
+		socket.emit('boop');
+	});
+})
 
 app.server.listen(app.config.port, function() {
 	console.log("App listening on port " + app.config.port);
 });
+
