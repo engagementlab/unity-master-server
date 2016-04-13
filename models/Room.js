@@ -55,14 +55,6 @@ exports = module.exports = function (app, mongoose) {
 		return this.clients.length + 1; // add 1 so that the host is included in the count
 	};
 
-	roomSchema.methods.registerClient = function (client, cb) {
-		// TODO: events when un/registering
-	};
-
-	roomSchema.methods.unregisterClient = function (client, cb) {
-		// TODO: events when un/registering
-	};
-
 	roomSchema.methods.nextMessage = function () {
 		for (var i = 0; i < this.messages.length; i++) {
 			if (this.messages[i].waitingForConfirmations (this.clients))

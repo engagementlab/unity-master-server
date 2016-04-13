@@ -5,10 +5,7 @@ var timeout = 3; // time in seconds a client can be unresponsive before being ma
 exports = module.exports = function (app, mongoose) {
 	
 	var clientSchema = new mongoose.Schema({
-		name: String,
-		address: String,
-		lastUpdated: { type: Date, default: Date.now },
-		events: [String]
+		name: String
 	});
 
 	clientSchema.methods.connected = function () {
