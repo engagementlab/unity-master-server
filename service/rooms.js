@@ -2,6 +2,7 @@
 
 var async = require('async');
 var _ = require('underscore');
+var mongoose = require('mongoose');
 
 var handleError = function (res, err) {
 	console.log("error: " + err);
@@ -89,15 +90,19 @@ var rooms = {
 			if (outcome.nameTaken)
 				return cb(null, 'done');
 
-			app.db.models.Room.create({
-				host: clientId
-			}, function (err, room) {
+			app.db.models.Room.findOneAndUpdate({ _id: mongoose.Types.ObjectId() }, { host: clientId }, {
+				new: true,
+				upsert: true,
+				runValidators: true,
+				setDefaultsOnInsert: true,
+				populate: 'host'
+			}, function(err, room) {
 				if (err)
 					return console.log(err);
 				outcome.room = room;
 				cb(null, 'done');
 			});
-		}
+		};
 
 		var asyncFinally = function (err, result) {
 			if (err) {
@@ -135,8 +140,10 @@ var rooms = {
 		var outcome = {};
 
 		var findRoom = function (cb) {
+
 			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
 				outcome.room = room;
+				console.log(room.clients);
 				cb(null, 'done');
 			});
 		};
@@ -160,7 +167,7 @@ var rooms = {
 			if (outcome.nameTaken)
 				return cb(null, 'done');
 
-			outcome.room.update({ '$addToSet': { 'clients': outcome.client._id } }, function(err, room) {
+			outcome.room.update({ '$addToSet': { 'clients': outcome.client._id } }, function(err, n) {
 				if (err)
 					return console.log(err);
 				cb(null, 'done');
@@ -176,6 +183,59 @@ var rooms = {
 		};
 
 		async.waterfall([findRoom, findClient, checkClientNameUnique, joinRoom], asyncFinally);
+	},
+
+	leave: function (app, clientId, roomId, cb) {
+
+		var outcome = {};
+
+		var findRoom = function (cb) {
+			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
+				console.log(roomId);
+				outcome.room = room;
+				cb(null, 'done');
+			});
+		};
+
+		var findClient = function (data, cb) {
+			app.db.models.Client.findById(clientId, function(err, client) {
+				outcome.client = client;
+				cb(null, 'done');
+			});
+		};
+
+		var leaveRoom = function (data, cb) {
+
+			var clientId = outcome.client._id;
+
+			// todo: handle host leaving
+			if (outcome.room.host._id == clientId) {
+				outcome.room.update({ '$set': { 'host': null } }, function(err, n) {
+					if (err)
+						console.log(err);
+					outcome.hostLeft = true;
+					return cb(null, 'done');
+				});
+			}
+
+			app.db.models.Room.findOneAndUpdate({ _id: outcome.room._id }, { '$pull': { 'clients': clientId } }, { new: true }, function(err, doc) {
+				if (err)
+					console.log(err);
+				console.log(doc);
+				outcome.hostLeft = false;
+				cb(null, 'done');
+			});
+		};
+
+		var asyncFinally = function (err, result) {
+			if (err) {
+				console.log(err);
+				return next(err);
+			}
+			cb(outcome);
+		};
+
+		async.waterfall([findRoom, findClient, leaveRoom], asyncFinally);
 	},
 
 	// EXPRESS ROUTES

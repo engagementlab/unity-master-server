@@ -56,15 +56,46 @@ exports = module.exports = function (app, io) {
 
 				var clients = result.room.clients;
 				clients.push(result.client);
-				clients.push(result.room.host);
 
-				socket.broadcast.to(result.room._id).emit('update_clients', { clients: clients });
 				cb(result);
+				socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
 			});
 		});
 
-		socket.on('join', function(socket) {
-			console.log(socket);
+		socket.on('leaveRoom', function(obj) {
+
+			rooms.leave(app, obj.clientId, obj.roomId, function(result) {
+				socket.leave(result.room._id);
+				if (result.hostLeft) {
+					for (var i = 0; i < result.room.clients.length; i++) {
+						socket.broadcast.to(result.room._id).emit('leaveRoom', { 
+							roomId: result.room._id, 
+							clientId: result.room.clients[i]._id,
+						});
+					}
+				} else {
+					var clients = result.room.clients;
+					clients.pull(result.client);
+					socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
+				}
+			});
+		});
+
+		socket.on('sendMessage', function(obj) {
+			// console.log(obj);
+			if (obj.key == "InstanceDataLoaded") {
+				socket.broadcast.to(obj.roomId).emit('receiveMessage', {
+					key: obj.key,
+					str1: JSON.stringify(obj)
+				});
+			} else {
+				socket.broadcast.to(obj.roomId).emit('receiveMessage', { 
+					key: obj.key, 
+					str1: obj.str1, 
+					str2: obj.str2, 
+					val: obj.val 
+				});
+			}
 		});
 
 		socket.on('disconnect', function(socket) {
