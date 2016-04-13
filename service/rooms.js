@@ -64,6 +64,122 @@ var getRoomClientsAndHost = function (req, cb) {
 
 var rooms = {
 
+	// SOCKET IO
+
+	create: function (app, clientId, cb) {
+
+		var outcome = {};
+
+		var getClient = function(cb) {
+			app.db.models.Client.findById(clientId, function(err, client) {
+				outcome.client = client;
+				cb(null, 'done');
+			});
+		};
+
+		var checkIfNameAvailable = function (data, cb) {
+			app.db.models.Room.roomsHaveName(outcome.client.name, function(result) {
+				outcome.nameTaken = result;
+				cb(null, 'done');
+			});
+		};
+
+		var createRoom = function (data, cb) {
+
+			if (outcome.nameTaken)
+				return cb(null, 'done');
+
+			app.db.models.Room.create({
+				host: clientId
+			}, function (err, room) {
+				if (err)
+					return console.log(err);
+				outcome.room = room;
+				cb(null, 'done');
+			});
+		}
+
+		var asyncFinally = function (err, result) {
+			if (err) {
+				console.log(err);
+				return next(err);
+			}
+			cb(outcome);
+		};
+
+		async.waterfall([getClient, checkIfNameAvailable, createRoom], asyncFinally);
+	},
+
+	requestRoomList2: function (app, cb) {
+
+		// Returns a list of all available rooms. List includes room ids and host data
+		app.db.models.Room.find({}).populate('host').exec(function(err, rooms) {
+
+			if (err)
+				return console.log(err);
+
+			var availableRooms = _.filter(rooms, function (x) { 
+				return x.acceptingClients(); 
+			});
+
+			var roomLookup = _.map(availableRooms, function (x) { 
+				return { id: x._id, host: x.host.name }; 
+			});
+			
+			cb({ rooms: roomLookup });
+		});
+	},
+
+	join: function (app, clientId, roomId, cb) {
+
+		var outcome = {};
+
+		var findRoom = function (cb) {
+			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
+				outcome.room = room;
+				cb(null, 'done');
+			});
+		};
+
+		var findClient = function (data, cb) {
+			app.db.models.Client.findById(clientId, function(err, client) {
+				outcome.client = client;
+				cb(null, 'done');
+			});
+		};
+
+		var checkClientNameUnique = function (data, cb) {
+			outcome.room.hasName(outcome.client.name, function(result) {
+				outcome.nameTaken = result;
+				cb(null, 'done');
+			});
+		};
+
+		var joinRoom = function (data, cb) {
+
+			if (outcome.nameTaken)
+				return cb(null, 'done');
+
+			outcome.room.update({ '$addToSet': { 'clients': outcome.client._id } }, function(err, room) {
+				if (err)
+					return console.log(err);
+				cb(null, 'done');
+			});
+		};
+
+		var asyncFinally = function (err, result) {
+			if (err) {
+				console.log(err);
+				return next(err);
+			}
+			cb(outcome);
+		};
+
+		async.waterfall([findRoom, findClient, checkClientNameUnique, joinRoom], asyncFinally);
+	},
+
+	// EXPRESS ROUTES
+
 	// Creates a Client model for the host and creates a new Room with the host
 	registerHost: function (req, res) {
 
@@ -144,8 +260,9 @@ var rooms = {
 				return handleError(res, err);
 			}
 			var outcome = {};
-			var availableRooms = _.filter(rooms, function (x) { return x.open && x.acceptingClients(); })
-			outcome.rooms = _.map(availableRooms, function(x) { return { roomId: x._id, host: x.host.name }; });
+			// var availableRooms = _.filter(rooms, function (x) { return x.open && x.acceptingClients(); })
+			var availableRooms = _.filter(rooms, function (x) { return x.acceptingClients(); });
+			outcome.rooms = _.map(availableRooms, function (x) { return { roomId: x._id, host: x.host.name }; });
 			res.status(200).json(outcome);
 		});
 	},

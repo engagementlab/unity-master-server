@@ -27,15 +27,10 @@ require('./models')(app, mongoose);
 app.set('port', config.port);
 app.set('json spaces', 2);
 
-require('./routes')(app);
+require('./routes')(app, io);
 // require('./hosts')(app); // old version - deprecate
 
 io.attach(3002);
-io.on('connection', function(socket){
-	socket.on('beep', function(){
-		socket.emit('boop');
-	});
-})
 
 app.server.listen(app.config.port, function() {
 	console.log("App listening on port " + app.config.port);

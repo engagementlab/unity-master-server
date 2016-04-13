@@ -1,9 +1,10 @@
 'use strict';
 
+var clients = require('./service/clients');
 var rooms = require('./service/rooms');
 var messages = require('./service/messages');
 
-exports = module.exports = function (app) {
+exports = module.exports = function (app, io) {
 
 	app.get('/ping', function(req, res) { res.status(200).json({ result: "sucess" })});
 
@@ -25,4 +26,28 @@ exports = module.exports = function (app) {
 	// -- Debugging
 	app.get('/reset', rooms.reset);
 	app.get('/printRooms', rooms.printRooms);
+
+	io.on('connection', function(socket){
+
+		socket.on('register', function(name, cb) {
+			// cb({ name: name });
+			clients.register(app, name, cb);
+		});
+
+		socket.on('createRoom', function(clientId, cb) {
+			rooms.create(app, clientId, cb);
+		});
+
+		socket.on('requestRoomList', function(cb) {
+			rooms.requestRoomList2(app, cb);
+		});
+
+		socket.on('joinRoom', function(obj, cb) {
+			rooms.join(app, obj.clientId, obj.roomId, cb);
+		});
+
+		socket.on('disconnect', function(socket) {
+			console.log('user disconnected');
+		});
+	});
 };

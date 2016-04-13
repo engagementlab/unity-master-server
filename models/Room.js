@@ -25,7 +25,30 @@ exports = module.exports = function (app, mongoose) {
 	});
 
 	roomSchema.methods.acceptingClients = function () {
-		return this.maxClientCount == -1 || this.clients.length < this.maxClientCount;
+		return this.open && this.maxClientCount == -1 || this.clients.length < this.maxClientCount;
+	};
+
+	roomSchema.statics.findOpenRooms = function (err, cb) {
+		app.db.models.Room.find({ open: true }, function(err, rooms) {
+			if (err)
+				cb(err, null);
+			cb(null, _.filter(rooms, function(x) { return x.acceptingClients(); }));
+		});
+	};
+
+	roomSchema.statics.roomsHaveName = function (name, cb) {
+		app.db.models.Room.find({}).populate('host').exec(function(err, rooms) {
+			var openRooms = _.filter(rooms, function (x) { return x.acceptingClients(); });
+			cb(_.find(openRooms, function (x) { return x.host.name == name; }) != null);
+		});
+	};
+
+	roomSchema.methods.hasName = function (name, cb) {
+		app.db.models.Room.findById(this._id).populate('host clients').exec(function(err, room) {
+			if (room.host.name == name)
+				return cb(true);
+			cb(_.find(room.clients, function (x) { return x.name == name; }) != null);
+		});
 	};
 
 	roomSchema.methods.clientCount = function () {
