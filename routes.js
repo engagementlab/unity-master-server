@@ -30,12 +30,16 @@ exports = module.exports = function (app, io) {
 	io.on('connection', function(socket){
 
 		socket.on('register', function(name, cb) {
-			// cb({ name: name });
 			clients.register(app, name, cb);
 		});
 
 		socket.on('createRoom', function(clientId, cb) {
-			rooms.create(app, clientId, cb);
+			rooms.create(app, clientId, function(result) {
+				if (result.nameTaken)
+					return cb(result);
+				socket.join(result.room._id);
+				cb(result);
+			});
 		});
 
 		socket.on('requestRoomList', function(cb) {
@@ -43,11 +47,32 @@ exports = module.exports = function (app, io) {
 		});
 
 		socket.on('joinRoom', function(obj, cb) {
-			rooms.join(app, obj.clientId, obj.roomId, cb);
+			rooms.join(app, obj.clientId, obj.roomId, function(result) {
+
+				if (result.nameTaken)
+					return cb(result);
+
+				socket.join(result.room._id);
+
+				var clients = result.room.clients;
+				clients.push(result.client);
+				clients.push(result.room.host);
+
+				socket.broadcast.to(result.room._id).emit('update_clients', { clients: clients });
+				cb(result);
+			});
+		});
+
+		socket.on('join', function(socket) {
+			console.log(socket);
 		});
 
 		socket.on('disconnect', function(socket) {
 			console.log('user disconnected');
 		});
+
+		/*socket.on('beep', function(){
+			socket.emit('boop');
+		});*/
 	});
 };
