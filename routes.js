@@ -4,6 +4,12 @@ var clients = require('./service/clients');
 var rooms = require('./service/rooms');
 var messages = require('./service/messages');
 
+function broadcastRoomListUpdated(app, socket) {
+	rooms.requestRoomList2(app, function(list) {
+		socket.broadcast.emit('roomListUpdated', list);
+	});
+}
+
 exports = module.exports = function (app, io) {
 
 	app.get('/ping', function(req, res) { res.status(200).json({ result: "sucess" })});
@@ -35,10 +41,14 @@ exports = module.exports = function (app, io) {
 
 		socket.on('createRoom', function(clientId, cb) {
 			rooms.create(app, clientId, function(result) {
+
 				if (result.nameTaken)
 					return cb(result);
+
 				socket.join(result.room._id);
+
 				cb(result);
+				broadcastRoomListUpdated(app, socket);
 			});
 		});
 
@@ -73,6 +83,7 @@ exports = module.exports = function (app, io) {
 							clientId: result.room.clients[i]._id,
 						});
 					}
+					broadcastRoomListUpdated(app, socket);
 				} else {
 					var clients = result.room.clients;
 					clients.pull(result.client);
@@ -81,8 +92,12 @@ exports = module.exports = function (app, io) {
 			});
 		});
 
+		socket.on('closeRoom', function(roomId) {
+			rooms.close(app, roomId);
+			broadcastRoomListUpdated(app, socket);
+		});
+
 		socket.on('sendMessage', function(obj) {
-			// console.log(obj);
 			if (obj.key == "InstanceDataLoaded") {
 				socket.broadcast.to(obj.roomId).emit('receiveMessage', {
 					key: obj.key,
@@ -96,6 +111,10 @@ exports = module.exports = function (app, io) {
 					val: obj.val 
 				});
 			}
+		});
+
+		socket.on('confirmReceipt', function(obj) {
+			console.log(obj.clientId + ": " + obj.key);
 		});
 
 		socket.on('disconnect', function(socket) {

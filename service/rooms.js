@@ -179,6 +179,14 @@ var rooms = {
 		async.waterfall([findRoom, findClient, leaveRoom], asyncFinally);
 	},
 
+	close: function (app, roomId) {
+		app.db.models.Room.findOneAndUpdate({ _id: roomId }, { 'open': false }, function(err, n) {
+			if (err)
+				console.log(err);
+			console.log("room closed :)");
+		});
+	},
+
 	reset: function (req, res) {
 		// todo: async 
 		req.app.db.models.Room.remove({}, function(err) {
