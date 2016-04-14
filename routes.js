@@ -35,6 +35,10 @@ exports = module.exports = function (app, io) {
 
 	io.on('connection', function(socket){
 
+		socket.on('reset', function(cb) {
+			rooms.reset(app, cb);
+		});
+
 		socket.on('register', function(name, cb) {
 			clients.register(app, name, cb);
 		});

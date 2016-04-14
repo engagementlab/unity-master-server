@@ -187,7 +187,20 @@ var rooms = {
 		});
 	},
 
-	reset: function (req, res) {
+	reset: function (app, cb) {
+		app.db.models.Room.remove({}, function(err) {
+			if (err) return err;
+			app.db.models.Client.remove({}, function(err) {
+				if (err) return err;
+				app.db.models.Message.remove({}, function(err) {
+					if (err) return err;
+					// res.status(200).json({ result: "success" });
+					cb();
+				});
+			});
+		});
+	},
+	/*reset: function (req, res) {
 		// todo: async 
 		req.app.db.models.Room.remove({}, function(err) {
 			if (err) return err;
@@ -199,7 +212,7 @@ var rooms = {
 				});
 			});
 		});
-	},
+	},*/
 
 	printRooms: function (req, res) {
 		req.app.db.models.Room.find({}).populate('host clients messages').exec(function (err, rooms) {

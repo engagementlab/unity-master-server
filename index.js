@@ -30,7 +30,7 @@ app.set('json spaces', 2);
 require('./routes')(app, io);
 // require('./hosts')(app); // old version - deprecate
 
-io.attach(3002);
+io.listen(app.server);
 
 app.server.listen(app.config.port, function() {
 	console.log("App listening on port " + app.config.port);
