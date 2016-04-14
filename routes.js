@@ -35,8 +35,8 @@ exports = module.exports = function (app, io) {
 
 	io.on('connection', function(socket){
 
-		socket.on('reset', function(cb) {
-			rooms.reset(app, cb);
+		socket.on('socketReset', function(cb) {
+			rooms.socketReset(app, cb);
 		});
 
 		socket.on('register', function(name, cb) {
@@ -117,9 +117,9 @@ exports = module.exports = function (app, io) {
 			}
 		});
 
-		socket.on('confirmReceipt', function(obj) {
-			console.log(obj.clientId + ": " + obj.key);
-		});
+		/*socket.on('confirmReceipt', function(obj) {
+			// messages.confirm(app, obj.clientId, obj.key);
+		});*/
 
 		socket.on('disconnect', function(socket) {
 			// console.log('user disconnected');

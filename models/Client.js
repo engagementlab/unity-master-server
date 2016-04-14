@@ -8,9 +8,5 @@ exports = module.exports = function (app, mongoose) {
 		name: String
 	});
 
-	clientSchema.methods.connected = function () {
-		return this.lastUpdated > Date.now()-timeout*1000;
-	};
-
 	app.db.model('Client', clientSchema);
 };

@@ -28,7 +28,6 @@ app.set('port', config.port);
 app.set('json spaces', 2);
 
 require('./routes')(app, io);
-// require('./hosts')(app); // old version - deprecate
 
 io.listen(app.server);
 

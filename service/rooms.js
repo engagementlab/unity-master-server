@@ -183,36 +183,44 @@ var rooms = {
 		app.db.models.Room.findOneAndUpdate({ _id: roomId }, { 'open': false }, function(err, n) {
 			if (err)
 				console.log(err);
-			console.log("room closed :)");
 		});
 	},
 
-	reset: function (app, cb) {
-		app.db.models.Room.remove({}, function(err) {
-			if (err) return err;
-			app.db.models.Client.remove({}, function(err) {
-				if (err) return err;
-				app.db.models.Message.remove({}, function(err) {
-					if (err) return err;
-					// res.status(200).json({ result: "success" });
-					cb();
+	socketReset: function (app, cb) {
+
+		async.parallel({
+
+			removeRooms: function(cb) {
+				app.db.models.Room.remove({}, function(err) {
+					if (err) return cb(err, null);
+					cb(null, 'done');
 				});
-			});
+			},
+
+			removeClients: function(cb) {
+				app.db.models.Client.remove({}, function(err) {
+					if (err) return cb(err, null);
+					cb(null, 'done');
+				});
+			},
+
+			removeMessages: function(cb) {
+				app.db.models.Message.remove({}, function(err) {
+					if (err) return cb(err, null);
+					cb(null, 'done');
+				});
+			}
+		},
+		function(err, result) {
+			cb();
 		});
 	},
-	/*reset: function (req, res) {
-		// todo: async 
-		req.app.db.models.Room.remove({}, function(err) {
-			if (err) return err;
-			req.app.db.models.Client.remove({}, function(err) {
-				if (err) return err;
-				req.app.db.models.Message.remove({}, function(err) {
-					if (err) return err;
-					res.status(200).json({ result: "success" });
-				});
-			});
+
+	reset: function (req, res) {
+		socketReset(req.app, function() {
+			res.status(200).json({ result: "success" });
 		});
-	},*/
+	},
 
 	printRooms: function (req, res) {
 		req.app.db.models.Room.find({}).populate('host clients messages').exec(function (err, rooms) {

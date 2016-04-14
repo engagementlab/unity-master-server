@@ -9,6 +9,7 @@ exports = module.exports = function (app, mongoose) {
 		str1: String,
 		str2: String,
 		val: Number,
+		obj: Object,
 		confirmations: [{
 			type: mongoose.Schema.Types.ObjectId,
 			ref: 'Client',
