@@ -7,6 +7,10 @@ var clients = {
 				return console.log(err);
 			cb(client);
 		});
+	},
+
+	unregister: function (app, clientId, cb) {
+		app.db.models.Client.findById(clientId).remove(cb);
 	}
 };
 

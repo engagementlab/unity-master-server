@@ -5,33 +5,19 @@ var rooms = require('./service/rooms');
 var messages = require('./service/messages');
 
 function broadcastRoomListUpdated(app, socket) {
-	rooms.requestRoomList2(app, function(list) {
+	rooms.requestRoomList(app, function(list) {
 		socket.broadcast.emit('roomListUpdated', list);
 	});
 }
 
 exports = module.exports = function (app, io) {
 
-	app.get('/ping', function(req, res) { res.status(200).json({ result: "sucess" })});
+	// -- Express routes
 
-	// -- Rooms
-	/*app.get('/registerHost/:name/:address/:maxClientCount', rooms.registerHost);
-	app.get('/unregisterHost/:roomId', rooms.unregisterHost);
-	app.get('/registerClient/:roomId/:name/:address', rooms.registerClient);
-	app.get('/unregisterClient/:roomId/:clientId', rooms.unregisterClient);
-	app.get('/roomList', rooms.requestRoomList);
-	app.get('/getRoom/:roomId', rooms.getRoom);
-	app.get('/closeRoom/:roomId', rooms.close);
-	app.get('/closeDisconnectedRooms', rooms.closeDisconnectedRooms);*/
-
-	// -- Messaging
-	// app.post('/sendMessage/:roomId/:clientId', messages.send);
-	// app.get('/sendMessage/:roomId/:clientId/:key/:str1/:str2/:val', messages.send);
-	// app.get('/receiveMessage/:roomId/:clientId', messages.receive);
-
-	// -- Debugging
 	app.get('/reset', rooms.reset);
 	app.get('/printRooms', rooms.printRooms);
+
+	// -- Socket IO
 
 	io.on('connection', function(socket){
 
@@ -43,8 +29,12 @@ exports = module.exports = function (app, io) {
 			clients.register(app, name, cb);
 		});
 
-		socket.on('createRoom', function(clientId, cb) {
-			rooms.create(app, clientId, function(result) {
+		socket.on('unregister', function(clientId, cb) {
+			clients.unregister(app, clientId, cb);
+		});
+
+		socket.on('createRoom', function(obj, cb) {
+			rooms.create(app, obj.clientId, obj.maxClientCount, function(result) {
 
 				if (result.nameTaken)
 					return cb(result);
@@ -57,7 +47,7 @@ exports = module.exports = function (app, io) {
 		});
 
 		socket.on('requestRoomList', function(cb) {
-			rooms.requestRoomList2(app, cb);
+			rooms.requestRoomList(app, cb);
 		});
 
 		socket.on('joinRoom', function(obj, cb) {
@@ -73,10 +63,11 @@ exports = module.exports = function (app, io) {
 
 				cb(result);
 				socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
+				broadcastRoomListUpdated(app, socket);
 			});
 		});
 
-		socket.on('leaveRoom', function(obj) {
+		socket.on('leaveRoom', function(obj, cb) {
 
 			rooms.leave(app, obj.clientId, obj.roomId, function(result) {
 				socket.leave(result.room._id);
@@ -87,12 +78,13 @@ exports = module.exports = function (app, io) {
 							clientId: result.room.clients[i]._id,
 						});
 					}
-					broadcastRoomListUpdated(app, socket);
 				} else {
 					var clients = result.room.clients;
 					clients.pull(result.client);
 					socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
 				}
+				broadcastRoomListUpdated(app, socket);
+				cb();
 			});
 		});
 

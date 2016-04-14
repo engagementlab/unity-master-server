@@ -8,7 +8,7 @@ var rooms = {
 
 	// SOCKET IO
 
-	create: function (app, clientId, cb) {
+	create: function (app, clientId, maxClientCount, cb) {
 
 		var outcome = {};
 
@@ -31,7 +31,10 @@ var rooms = {
 			if (outcome.nameTaken)
 				return cb(null, 'done');
 
-			app.db.models.Room.findOneAndUpdate({ _id: mongoose.Types.ObjectId() }, { host: clientId }, {
+			app.db.models.Room.findOneAndUpdate({ 
+				_id: mongoose.Types.ObjectId(),
+				maxClientCount: maxClientCount
+			}, { host: clientId }, {
 				new: true,
 				upsert: true,
 				runValidators: true,
@@ -56,7 +59,7 @@ var rooms = {
 		async.waterfall([getClient, checkIfNameAvailable, createRoom], asyncFinally);
 	},
 
-	requestRoomList2: function (app, cb) {
+	requestRoomList: function (app, cb) {
 
 		// Returns a list of all available rooms. List includes room ids and host data
 		app.db.models.Room.find({}).populate('host').exec(function(err, rooms) {
@@ -132,7 +135,6 @@ var rooms = {
 
 		var findRoom = function (cb) {
 			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
-				console.log(roomId);
 				outcome.room = room;
 				cb(null, 'done');
 			});
@@ -162,7 +164,6 @@ var rooms = {
 			app.db.models.Room.findOneAndUpdate({ _id: outcome.room._id }, { '$pull': { 'clients': clientId } }, { new: true }, function(err, doc) {
 				if (err)
 					console.log(err);
-				console.log(doc);
 				outcome.hostLeft = false;
 				cb(null, 'done');
 			});

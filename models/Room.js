@@ -25,7 +25,7 @@ exports = module.exports = function (app, mongoose) {
 	});
 
 	roomSchema.methods.acceptingClients = function () {
-		return this.open && this.maxClientCount == -1 || this.clients.length < this.maxClientCount;
+		return this.open && this.maxClientCount == -1 || this.clients.length+1 < this.maxClientCount;
 	};
 
 	roomSchema.statics.findOpenRooms = function (err, cb) {
