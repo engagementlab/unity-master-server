@@ -116,24 +116,15 @@ exports = module.exports = function (app, io) {
 
 		// Send a message to all clients
 		socket.on('sendMessage', function(obj) {
-			
-			var key = obj.key;
-			var str1 = obj.str1 || JSON.stringify (obj);
-			
-			socket.broadcast.to(obj.roomId).emit('receiveMessage', { 
-				key: key, 
-				str1: str1, 
-				str2: obj.str2, 
-				val: obj.val 
-			});
+			socket.broadcast.to(obj.roomId).emit('receiveMessage', obj);
 		});
 
 		/*socket.on('confirmReceipt', function(obj) {
 			// messages.confirm(app, obj.clientId, obj.key);
 		});*/
 
-		socket.on('disconnect', function(socket) {
-			// console.log('user disconnected');
-		});
+		/*socket.on('disconnect', function(socket) {
+			console.log('user disconnected');
+		});*/
 	});
 };

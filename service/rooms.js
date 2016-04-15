@@ -177,14 +177,17 @@ var rooms = {
 		var leaveRoom = function (data, cb) {
 
 			var clientId = outcome.client._id;
+			var host = outcome.room.host;
 
-			if (_.isEqual(outcome.room.host._id, clientId)) {
+			// If this client is the host, close the room
+			if (host != null && _.isEqual(host._id, clientId)) {
 				app.db.models.Room.findById(outcome.room._id).remove(function() {
 					outcome.hostLeft = true;
 					return cb(null, 'done');
 				});
 			}
 
+			// If this client is not the host, remove them from the room
 			app.db.models.Room.findOneAndUpdate({ _id: outcome.room._id }, { '$pull': { 'clients': clientId } }, { new: true }, function(err, doc) {
 				if (err)
 					console.log(err);
