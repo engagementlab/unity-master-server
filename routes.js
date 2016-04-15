@@ -21,18 +21,22 @@ exports = module.exports = function (app, io) {
 
 	io.on('connection', function(socket){
 
+		// Clear the database
 		socket.on('socketReset', function(cb) {
 			rooms.socketReset(app, cb);
 		});
 
+		// Register a new client
 		socket.on('register', function(name, cb) {
 			clients.register(app, name, cb);
 		});
 
+		// Unregister a client
 		socket.on('unregister', function(clientId, cb) {
 			clients.unregister(app, clientId, cb);
 		});
 
+		// Create a room with the client as the host
 		socket.on('createRoom', function(obj, cb) {
 			rooms.create(app, obj.clientId, obj.maxClientCount, function(result) {
 
@@ -46,10 +50,12 @@ exports = module.exports = function (app, io) {
 			});
 		});
 
+		// Get the rooms available for joining
 		socket.on('requestRoomList', function(cb) {
 			rooms.requestRoomList(app, cb);
 		});
 
+		// Join a room
 		socket.on('joinRoom', function(obj, cb) {
 			rooms.join(app, obj.clientId, obj.roomId, function(result) {
 
@@ -67,32 +73,33 @@ exports = module.exports = function (app, io) {
 			});
 		});
 
+		// Leave a room. If hosting, removes the room and any clients in it
 		socket.on('leaveRoom', function(obj, cb) {
 
 			rooms.leave(app, obj.clientId, obj.roomId, function(result) {
+				
 				socket.leave(result.room._id);
+
 				if (result.hostLeft) {
-					for (var i = 0; i < result.room.clients.length; i++) {
-						socket.broadcast.to(result.room._id).emit('leaveRoom', { 
-							roomId: result.room._id, 
-							clientId: result.room.clients[i]._id,
-						});
-					}
+					socket.broadcast.to(result.room._id).emit('kick');
 				} else {
 					var clients = result.room.clients;
 					clients.pull(result.client);
 					socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
 				}
+
 				broadcastRoomListUpdated(app, socket);
 				cb();
 			});
 		});
 
+		// Close a room so that no other clients can join (use this at the start of a game to prevent clients from joining a game that's in progress)
 		socket.on('closeRoom', function(roomId) {
 			rooms.close(app, roomId);
 			broadcastRoomListUpdated(app, socket);
 		});
 
+		// Send a message to all clients
 		socket.on('sendMessage', function(obj) {
 			if (obj.key == "InstanceDataLoaded") {
 				socket.broadcast.to(obj.roomId).emit('receiveMessage', {

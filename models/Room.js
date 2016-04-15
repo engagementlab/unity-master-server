@@ -11,21 +11,19 @@ exports = module.exports = function (app, mongoose) {
 		},
 		clients: [{
 			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Client',
-			default: []
+			ref: 'Client'
 		}],
 		maxClientCount: { type: Number, default: -1 },
 		messages: [{
 			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Message',
-			default: []
+			ref: 'Message'
 		}],
 		open: { type: Boolean, default: true },
 		timeCreated: { type: Date, default: Date.now },
 	});
 
 	roomSchema.methods.acceptingClients = function () {
-		return this.open && this.maxClientCount == -1 || this.clients.length+1 < this.maxClientCount;
+		return this.open && this.host != null && this.maxClientCount == -1 || this.clients.length+1 < this.maxClientCount;
 	};
 
 	roomSchema.statics.findOpenRooms = function (err, cb) {

@@ -4,17 +4,53 @@ var async = require('async');
 var _ = require('underscore');
 var mongoose = require('mongoose');
 
-var rooms = {
+function clearDb(app, callback) {
 
-	// SOCKET IO
+	async.parallel({
+
+		removeRooms: function(cb) {
+			app.db.models.Room.remove({}, function(err) {
+				if (err) return cb(err, null);
+				cb(null, 'done');
+			});
+		},
+
+		removeClients: function(cb) {
+			app.db.models.Client.remove({}, function(err) {
+				if (err) return cb(err, null);
+				cb(null, 'done');
+			});
+		},
+
+		removeMessages: function(cb) {
+			app.db.models.Message.remove({}, function(err) {
+				if (err) return cb(err, null);
+				cb(null, 'done');
+			});
+		}
+	},
+	function(err, result) {
+		callback();
+	});
+}
+
+var rooms = {
 
 	create: function (app, clientId, maxClientCount, cb) {
 
 		var outcome = {};
 
 		var getClient = function(cb) {
+			console.log("GET CLIENT");
 			app.db.models.Client.findById(clientId, function(err, client) {
 				outcome.client = client;
+				/*app.db.models.Client.find({}, function(err, result) {
+					// for (var i = 0; i < result.length; i++) {
+					// 	console.log(clientId + " ... " + result[i]);
+					// }
+					// console.log("OUTCOME: " + outcome.client);
+					cb(null, 'done');
+				});*/
 				cb(null, 'done');
 			});
 		};
@@ -87,7 +123,6 @@ var rooms = {
 
 			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
 				outcome.room = room;
-				console.log(room.clients);
 				cb(null, 'done');
 			});
 		};
@@ -152,10 +187,8 @@ var rooms = {
 			var clientId = outcome.client._id;
 
 			// todo: handle host leaving
-			if (outcome.room.host._id == clientId) {
-				outcome.room.update({ '$set': { 'host': null } }, function(err, n) {
-					if (err)
-						console.log(err);
+			if (_.isEqual(outcome.room.host._id, clientId)) {
+				app.db.models.Room.findById(outcome.room._id).remove(function() {
 					outcome.hostLeft = true;
 					return cb(null, 'done');
 				});
@@ -188,44 +221,23 @@ var rooms = {
 	},
 
 	socketReset: function (app, cb) {
-
-		async.parallel({
-
-			removeRooms: function(cb) {
-				app.db.models.Room.remove({}, function(err) {
-					if (err) return cb(err, null);
-					cb(null, 'done');
-				});
-			},
-
-			removeClients: function(cb) {
-				app.db.models.Client.remove({}, function(err) {
-					if (err) return cb(err, null);
-					cb(null, 'done');
-				});
-			},
-
-			removeMessages: function(cb) {
-				app.db.models.Message.remove({}, function(err) {
-					if (err) return cb(err, null);
-					cb(null, 'done');
-				});
-			}
-		},
-		function(err, result) {
-			cb();
-		});
+		clearDb (app, cb);
 	},
 
 	reset: function (req, res) {
-		socketReset(req.app, function() {
+		clearDb(req.app, function() {
 			res.status(200).json({ result: "success" });
 		});
 	},
 
 	printRooms: function (req, res) {
 		req.app.db.models.Room.find({}).populate('host clients messages').exec(function (err, rooms) {
-			res.status(200).json(rooms);
+			req.app.db.models.Client.find({}, function(err, clients) {
+				var result = {};
+				result.rooms = rooms;
+				result.clients = clients;
+				res.status(200).json(result);
+			});
 		});
 	}
 };

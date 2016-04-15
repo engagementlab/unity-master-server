@@ -31,6 +31,55 @@ require('./routes')(app, io);
 
 io.listen(app.server);
 
+var clients = require('./service/clients');
+var rooms = require('./service/rooms');
+
+/*rooms.socketReset(app, function() {
+
+	// Create host
+	clients.register(app, 'hostname', function(host) {
+
+		// Create room
+		rooms.create(app, host._id, -1, function(createRoomResult) {
+			// var room = result.room;
+			
+			// Create client
+			clients.register(app, 'clientname', function(client) {
+
+				// Request room list
+				rooms.requestRoomList(app, function(roomList) {
+					var firstRoom = roomList.rooms[0];
+
+					// Join the first room in the list
+					rooms.join(app, client._id, firstRoom.id, function(joinResult) {
+
+						app.db.models.Room.findById(firstRoom.id, function(err, x) {
+
+							console.log("initial join: " + x.clients);
+
+							// Leave the room
+							rooms.leave(app, client._id, firstRoom.id, function(leaveResult) {
+
+								app.db.models.Room.findById(firstRoom.id, function(err, x2) {
+
+									console.log("leave: " + x2.clients);
+
+									// Rejoin
+									rooms.join(app, client._id, firstRoom.id, function(joinResult2) {
+										app.db.models.Room.findById(firstRoom.id, function(err, x3) {
+											console.log("rejoin: " + x3.clients);
+										});
+									});
+								});
+							});
+						});
+					});
+				});
+			});
+		});
+	});
+});*/
+
 app.server.listen(app.config.port, function() {
 	console.log("App listening on port " + app.config.port);
 });
