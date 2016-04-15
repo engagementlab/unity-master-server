@@ -9,10 +9,9 @@ Be sure that node.js and MongoDB are installed. Then:
 **1.** Clone this repository: `git clone https://engagementgamelab.org/master-server.git`
 
 **2.** Install the node package:
-	```
+
 	npm install
 	node index.js
-	```
 
 **3.** Configure. Create a new file `config.js` and fill in the fields from `config.template.js`
 
