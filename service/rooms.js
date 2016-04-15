@@ -96,7 +96,7 @@ var rooms = {
 				return console.log(err);
 
 			var availableRooms = _.filter(rooms, function (x) { 
-				return x.acceptingClients(); 
+				return x.acceptingClients() && x.host != null; 
 			});
 
 			var roomLookup = _.map(availableRooms, function (x) { 
@@ -175,6 +175,9 @@ var rooms = {
 		};
 
 		var leaveRoom = function (data, cb) {
+
+			if (outcome.room == null)
+				return cb(null, 'done');
 
 			var clientId = outcome.client._id;
 			var host = outcome.room.host;

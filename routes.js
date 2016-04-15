@@ -90,16 +90,18 @@ exports = module.exports = function (app, io) {
 				// Leave the room
 				rooms.leave(app, obj.clientId, obj.roomId, function(result) {
 					
-					socket.leave(result.room._id);
+					if (result.room != null) {
+						socket.leave(result.room._id);
 
-					if (result.hostLeft) {
-						socket.broadcast.to(result.room._id).emit('kick');
-					} else {
-						var roomClients = result.room.clients;
-						roomClients.pull(result.client);
-						socket.broadcast.to(result.room._id).emit('updateClients', { clients: roomClients });
+						if (result.hostLeft) {
+							socket.broadcast.to(result.room._id).emit('kick');
+						} else {
+							var roomClients = result.room.clients;
+							roomClients.pull(result.client);
+							socket.broadcast.to(result.room._id).emit('updateClients', { clients: roomClients });
+						}
 					}
-
+					
 					broadcastRoomListUpdated(app, socket);
 
 					// Unregister the client
