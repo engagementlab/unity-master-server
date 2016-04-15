@@ -10,12 +10,7 @@ var clients = {
 	},
 
 	unregister: function (app, clientId, cb) {
-		app.db.models.Client.findById(clientId).remove(function() {
-			app.db.models.Client.find({}, function(err, clients) {
-				// console.log(clients);
-				cb();
-			});
-		});
+		app.db.models.Client.findById(clientId).remove(cb);
 	}
 };
 

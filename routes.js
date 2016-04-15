@@ -26,27 +26,24 @@ exports = module.exports = function (app, io) {
 			rooms.socketReset(app, cb);
 		});
 
-		// Register a new client
-		socket.on('register', function(name, cb) {
-			clients.register(app, name, cb);
-		});
-
-		// Unregister a client
-		socket.on('unregister', function(clientId, cb) {
-			clients.unregister(app, clientId, cb);
-		});
-
 		// Create a room with the client as the host
 		socket.on('createRoom', function(obj, cb) {
-			rooms.create(app, obj.clientId, obj.maxClientCount, function(result) {
 
-				if (result.nameTaken)
-					return cb(result);
+			// Register the client
+			clients.register(app, obj.name, function(client) {
 
-				socket.join(result.room._id);
+				// Create the room
+				rooms.create(app, client._id, obj.maxClientCount, function(result) {
 
-				cb(result);
-				broadcastRoomListUpdated(app, socket);
+					if (result.nameTaken)
+						return cb(result);
+
+					socket.join(result.room._id);
+					result.client = client;
+
+					cb(result);
+					broadcastRoomListUpdated(app, socket);
+				});
 			});
 		});
 
@@ -57,40 +54,58 @@ exports = module.exports = function (app, io) {
 
 		// Join a room
 		socket.on('joinRoom', function(obj, cb) {
-			rooms.join(app, obj.clientId, obj.roomId, function(result) {
 
-				if (result.nameTaken)
-					return cb(result);
+			// Register the client
+			clients.register(app, obj.name, function(client) {
 
-				socket.join(result.room._id);
+				// Join the room
+				rooms.join(app, client._id, obj.roomId, function(result) {
 
-				var clients = result.room.clients;
-				clients.push(result.client);
+					if (result.nameTaken)
+						return cb(result);
 
-				cb(result);
-				socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
-				broadcastRoomListUpdated(app, socket);
+					socket.join(result.room._id);
+
+					var roomClients = result.room.clients;
+					roomClients.push(result.client);
+
+					result.client = client;
+
+					cb(result);
+					socket.broadcast.to(result.room._id).emit('updateClients', { clients: roomClients });
+					broadcastRoomListUpdated(app, socket);
+				});
 			});
 		});
 
 		// Leave a room. If hosting, removes the room and any clients in it
 		socket.on('leaveRoom', function(obj, cb) {
 
-			rooms.leave(app, obj.clientId, obj.roomId, function(result) {
-				
-				socket.leave(result.room._id);
+			if (obj.roomId == "") {
 
-				if (result.hostLeft) {
-					socket.broadcast.to(result.room._id).emit('kick');
-				} else {
-					var clients = result.room.clients;
-					clients.pull(result.client);
-					socket.broadcast.to(result.room._id).emit('updateClients', { clients: clients });
-				}
+				// If the client was not in a room, just unregister
+				clients.unregister(app, obj.clientId, cb);
+			} else {
 
-				broadcastRoomListUpdated(app, socket);
-				cb();
-			});
+				// Leave the room
+				rooms.leave(app, obj.clientId, obj.roomId, function(result) {
+					
+					socket.leave(result.room._id);
+
+					if (result.hostLeft) {
+						socket.broadcast.to(result.room._id).emit('kick');
+					} else {
+						var roomClients = result.room.clients;
+						roomClients.pull(result.client);
+						socket.broadcast.to(result.room._id).emit('updateClients', { clients: roomClients });
+					}
+
+					broadcastRoomListUpdated(app, socket);
+
+					// Unregister the client
+					clients.unregister(app, obj.clientId, cb);
+				});
+			}
 		});
 
 		// Close a room so that no other clients can join (use this at the start of a game to prevent clients from joining a game that's in progress)
@@ -101,19 +116,16 @@ exports = module.exports = function (app, io) {
 
 		// Send a message to all clients
 		socket.on('sendMessage', function(obj) {
-			if (obj.key == "InstanceDataLoaded") {
-				socket.broadcast.to(obj.roomId).emit('receiveMessage', {
-					key: obj.key,
-					str1: JSON.stringify(obj)
-				});
-			} else {
-				socket.broadcast.to(obj.roomId).emit('receiveMessage', { 
-					key: obj.key, 
-					str1: obj.str1, 
-					str2: obj.str2, 
-					val: obj.val 
-				});
-			}
+			
+			var key = obj.key;
+			var str1 = obj.str1 || JSON.stringify (obj);
+			
+			socket.broadcast.to(obj.roomId).emit('receiveMessage', { 
+				key: key, 
+				str1: str1, 
+				str2: obj.str2, 
+				val: obj.val 
+			});
 		});
 
 		/*socket.on('confirmReceipt', function(obj) {

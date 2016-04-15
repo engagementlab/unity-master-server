@@ -41,16 +41,8 @@ var rooms = {
 		var outcome = {};
 
 		var getClient = function(cb) {
-			console.log("GET CLIENT");
 			app.db.models.Client.findById(clientId, function(err, client) {
 				outcome.client = client;
-				/*app.db.models.Client.find({}, function(err, result) {
-					// for (var i = 0; i < result.length; i++) {
-					// 	console.log(clientId + " ... " + result[i]);
-					// }
-					// console.log("OUTCOME: " + outcome.client);
-					cb(null, 'done');
-				});*/
 				cb(null, 'done');
 			});
 		};
@@ -186,7 +178,6 @@ var rooms = {
 
 			var clientId = outcome.client._id;
 
-			// todo: handle host leaving
 			if (_.isEqual(outcome.room.host._id, clientId)) {
 				app.db.models.Room.findById(outcome.room._id).remove(function() {
 					outcome.hostLeft = true;
