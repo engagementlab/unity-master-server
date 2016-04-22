@@ -217,6 +217,14 @@ var rooms = {
 		});
 	},
 
+	checkDroppedClients: function (app, roomId, clientCount, cb) {
+		app.db.models.Room.findById(roomId, function(err, room) {
+			if (room.clients.length + 1 > clientCount)
+				return cb(true);
+			cb(false);
+		});
+	},
+
 	socketReset: function (app, cb) {
 		clearDb (app, cb);
 	},

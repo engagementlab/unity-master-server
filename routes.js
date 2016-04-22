@@ -118,15 +118,24 @@ exports = module.exports = function (app, io) {
 
 		// Send a message to all clients
 		socket.on('sendMessage', function(obj) {
-			socket.broadcast.to(obj.roomId).emit('receiveMessage', obj);
+
+			var roomId = obj.roomId;
+			var clientCount = io.nsps['/'].adapter.rooms[roomId].length;
+
+			rooms.checkDroppedClients(app, roomId, clientCount, function(dropped) {
+				if (!dropped)
+					socket.broadcast.to(roomId).emit('receiveMessage', obj);
+				else
+					socket.broadcast.to(roomId).emit('kick');
+			});
 		});
 
 		/*socket.on('confirmReceipt', function(obj) {
 			// messages.confirm(app, obj.clientId, obj.key);
 		});*/
 
-		/*socket.on('disconnect', function(socket) {
-			console.log('user disconnected');
+		/*socket.on('disconnect', function(room) {
+			console.log('user disconnected from ' + room);
 		});*/
 	});
 };
