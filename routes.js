@@ -86,7 +86,9 @@ exports = module.exports = function (app, io) {
 		// Rejoin a room (useful if connection was dropped)
 		socket.on('rejoinRoom', function(obj, cb) {
 			rooms.join(app, obj.clientId, obj.roomId, function(result) {
-				socket.join(obj.roomId);
+				checkDroppedClients(obj.roomId, function(d) {
+					console.log("Has dropped: " + d);
+				});
 				cb();
 			});
 		});
