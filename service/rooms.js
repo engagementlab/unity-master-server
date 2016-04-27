@@ -34,6 +34,59 @@ function clearDb(app, callback) {
 	});
 }
 
+function joinRoom(app, clientId, roomId, initial, callback) {
+
+	var outcome = {};
+
+	var findRoom = function (cb) {
+
+		app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
+			outcome.room = room;
+			cb(null, 'done');
+		});
+	};
+
+	var findClient = function (data, cb) {
+		app.db.models.Client.findById(clientId, function(err, client) {
+			outcome.client = client;
+			cb(null, 'done');
+		});
+	};
+
+	var checkClientNameUnique = function (data, cb) {
+
+		if (!initial)
+			return cb(null, 'done');
+
+		outcome.room.hasName(outcome.client.name, function(result) {
+			outcome.nameTaken = result;
+			cb(null, 'done');
+		});
+	};
+
+	var joinRoom = function (data, cb) {
+
+		if (outcome.nameTaken)
+			return cb(null, 'done');
+
+		outcome.room.update({ '$addToSet': { 'clients': outcome.client._id } }, function(err, n) {
+			if (err)
+				return console.log(err);
+			cb(null, 'done');
+		});
+	};
+
+	var asyncFinally = function (err, result) {
+		if (err) {
+			console.log(err);
+			return next(err);
+		}
+		callback(outcome);
+	};
+
+	async.waterfall([findRoom, findClient, checkClientNameUnique, joinRoom], asyncFinally);
+}
+
 var rooms = {
 
 	create: function (app, clientId, maxClientCount, cb) {
@@ -109,7 +162,8 @@ var rooms = {
 
 	join: function (app, clientId, roomId, cb) {
 
-		var outcome = {};
+		joinRoom(app, clientId, roomId, true, cb);
+		/*var outcome = {};
 
 		var findRoom = function (cb) {
 
@@ -153,7 +207,23 @@ var rooms = {
 			cb(outcome);
 		};
 
-		async.waterfall([findRoom, findClient, checkClientNameUnique, joinRoom], asyncFinally);
+		async.waterfall([findRoom, findClient, checkClientNameUnique, joinRoom], asyncFinally);*/
+	},
+
+	rejoin: function (app, clientId, roomId, cb) {
+
+		joinRoom(app, clientId, roomId, false, cb);
+		/*var outcome = {};
+
+		var findRoom = function (cb) {
+
+			app.db.models.Room.findById(roomId).populate('host clients').exec(function(err, room) {
+				outcome.room = room;
+				outcome.hasClient = outcome.room.
+				cb(null, 'done');
+			});
+		};*/
+
 	},
 
 	leave: function (app, clientId, roomId, cb) {

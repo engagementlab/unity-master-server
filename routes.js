@@ -12,6 +12,11 @@ function broadcastRoomListUpdated(app, socket) {
 
 exports = module.exports = function (app, io) {
 
+	function checkDroppedClients (roomId, cb) {
+		var clientCount = io.nsps['/'].adapter.rooms[roomId].length;
+		rooms.checkDroppedClients(app, roomId, clientCount, cb);
+	}
+
 	// -- Express routes
 
 	app.get('/reset', rooms.reset);
@@ -78,6 +83,14 @@ exports = module.exports = function (app, io) {
 			});
 		});
 
+		// Rejoin a room (useful if connection was dropped)
+		socket.on('rejoinRoom', function(obj, cb) {
+			rooms.join(app, obj.clientId, obj.roomId, function(result) {
+				socket.join(obj.roomId);
+				cb();
+			});
+		});
+
 		// Leave a room. If hosting, removes the room and any clients in it
 		socket.on('leaveRoom', function(obj, cb) {
 
@@ -118,15 +131,12 @@ exports = module.exports = function (app, io) {
 
 		// Send a message to all clients
 		socket.on('sendMessage', function(obj) {
+			socket.broadcast.to(obj.roomId).emit('receiveMessage', obj);
+		});
 
-			var roomId = obj.roomId;
-			var clientCount = io.nsps['/'].adapter.rooms[roomId].length;
-
-			rooms.checkDroppedClients(app, roomId, clientCount, function(dropped) {
-				if (!dropped)
-					socket.broadcast.to(roomId).emit('receiveMessage', obj);
-				else
-					socket.broadcast.to(roomId).emit('kick');
+		socket.on('checkDropped', function(roomId, cb) {
+			checkDroppedClients(roomId, function(dropped) {
+				cb({ dropped: dropped });
 			});
 		});
 
