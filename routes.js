@@ -2,7 +2,6 @@
 
 var clients = require('./service/clients');
 var rooms = require('./service/rooms');
-var messages = require('./service/messages');
 
 function broadcastRoomListUpdated(app, socket) {
 	rooms.requestRoomList(app, function(list) {
