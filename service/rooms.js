@@ -231,6 +231,8 @@ var rooms = {
 
 	checkDroppedClients: function (app, roomId, clientCount, cb) {
 		app.db.models.Room.findById(roomId, function(err, room) {
+			if (room == undefined)
+				return cb(false);
 			if (room.clients.length + 1 > clientCount)
 				return cb(true);
 			cb(false);
