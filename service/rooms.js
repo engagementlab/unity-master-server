@@ -20,13 +20,6 @@ function clearDb(app, callback) {
 				if (err) return cb(err, null);
 				cb(null, 'done');
 			});
-		},
-
-		removeMessages: function(cb) {
-			app.db.models.Message.remove({}, function(err) {
-				if (err) return cb(err, null);
-				cb(null, 'done');
-			});
 		}
 	},
 	function(err, result) {
@@ -250,7 +243,7 @@ var rooms = {
 	},
 
 	printRooms: function (req, res) {
-		req.app.db.models.Room.find({}).populate('host clients messages').exec(function (err, rooms) {
+		req.app.db.models.Room.find({}).populate('host clients').exec(function (err, rooms) {
 			req.app.db.models.Client.find({}, function(err, clients) {
 				var result = {};
 				result.rooms = rooms;

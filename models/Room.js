@@ -14,10 +14,6 @@ exports = module.exports = function (app, mongoose) {
 			ref: 'Client'
 		}],
 		maxClientCount: { type: Number, default: -1 },
-		messages: [{
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Message'
-		}],
 		open: { type: Boolean, default: true },
 		timeCreated: { type: Date, default: Date.now },
 	});
