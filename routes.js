@@ -12,6 +12,10 @@ function broadcastRoomListUpdated(app, socket) {
 exports = module.exports = function (app, io) {
 
 	function checkDroppedClients (roomId, cb) {
+
+		if(io.nsps['/'].adapter.rooms === undefined)
+			return;
+
 		var clientCount = io.nsps['/'].adapter.rooms[roomId].length;
 		rooms.checkDroppedClients(app, roomId, clientCount, cb);
 	}
@@ -143,8 +147,8 @@ exports = module.exports = function (app, io) {
 			// messages.confirm(app, obj.clientId, obj.key);
 		});*/
 
-		/*socket.on('disconnect', function(room) {
+		socket.on('disconnect', function(room) {
 			console.log('user disconnected from ' + room);
-		});*/
+		});
 	});
 };
