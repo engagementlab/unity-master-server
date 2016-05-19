@@ -16,6 +16,9 @@ exports = module.exports = function (app, io) {
 		if(io.nsps['/'].adapter.rooms === undefined)
 			return;
 
+		if(io.nsps['/'].adapter.rooms[roomId] === undefined)
+			return;
+
 		var clientCount = io.nsps['/'].adapter.rooms[roomId].length;
 		rooms.checkDroppedClients(app, roomId, clientCount, cb);
 	}
@@ -141,6 +144,10 @@ exports = module.exports = function (app, io) {
 			checkDroppedClients(roomId, function(dropped) {
 				cb({ dropped: dropped });
 			});
+		});
+
+		socket.on('syncDuration', function(obj) {
+			console.log('syncDuration', obj.roomId + ' ' + obj.duration);
 		});
 
 		/*socket.on('confirmReceipt', function(obj) {
