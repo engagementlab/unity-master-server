@@ -3,6 +3,8 @@
 var clients = require('./service/clients');
 var rooms = require('./service/rooms');
 
+var durations = {};
+
 function broadcastRoomListUpdated(app, socket) {
 	rooms.requestRoomList(app, function(list) {
 		socket.broadcast.emit('roomListUpdated', list);
@@ -92,7 +94,13 @@ exports = module.exports = function (app, io) {
 		// Rejoin a room (useful if connection was dropped)
 		socket.on('rejoinRoom', function(obj, cb) {
 			rooms.rejoin(app, obj.clientId, obj.roomId, function(result) {
-				socket.join(obj.roomId);
+
+				console.log('rejoinRoom')
+				socket.join(obj.roomId, function() {
+					console.log('updateDuration: ' + durations[obj.roomId])
+					socket.broadcast.to(obj.roomId).emit('updateDuration', { duration: durations[obj.roomId] });
+
+				});
 				cb();
 			});
 		});
@@ -147,7 +155,9 @@ exports = module.exports = function (app, io) {
 		});
 
 		socket.on('syncDuration', function(obj) {
-			console.log('syncDuration', obj.roomId + ' ' + obj.duration);
+			console.log('sync duration', obj.roomId + ' ' + obj.duration);
+
+			durations[obj.roomId] = obj.duration;
 		});
 
 		/*socket.on('confirmReceipt', function(obj) {

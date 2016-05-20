@@ -62,6 +62,9 @@ function joinRoom(app, clientId, roomId, initial, callback) {
 		if (outcome.nameTaken)
 			return cb(null, 'done');
 
+		if(outcome.room === undefined)
+			return;
+
 		outcome.room.update({ '$addToSet': { 'clients': outcome.client._id } }, function(err, n) {
 			if (err)
 				return console.log(err);
